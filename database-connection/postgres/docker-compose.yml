@@ -10,7 +10,7 @@ services:
   jupyter-notebooks:
     depends_on:
       - db
-    build: .
+    build: ..
     ports:
       - "8888:8888"
     volumes:
