@@ -1,4 +1,4 @@
-FROM jupyter/minimal-notebook:latest
+FROM jupyter/scipy-notebook:latest
 USER root
 ENV PACKAGES="libpq-dev" \
     PIP_PACKAGES="psycopg2"
