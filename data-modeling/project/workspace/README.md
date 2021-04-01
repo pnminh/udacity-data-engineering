@@ -1,0 +1,2 @@
+- [read json contents into panda dataframe](https://realpython.com/pandas-read-write-files/#json-files)
+- [use dataframe with selected columns](https://www.eEarthdatascience.org/courses/intro-to-earth-data-science/scientific-data-structures-python/pandas-dataframes/indexing-filtering-data-pandas-dataframes/#:~:text=This%20feature%20of%20pandas%20dataframes,and%20then%20use%20the%20attribute%20.)
