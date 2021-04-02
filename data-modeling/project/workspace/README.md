@@ -65,7 +65,7 @@ of what the data can help you with.
     group by s.title 
     order by occurrences;
     ```
-## About the Sparkify the company
+## About Sparkify the company
 Sparkify is a company focusing on providing our music lovers with our large collection of songs 
 from all genres and countries around the world. Our streaming application, Sparkify, 
 is highly reviewed by our loyal customers with its easy-to-use and intelligent features. 
