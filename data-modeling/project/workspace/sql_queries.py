@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS songplays(songplay_id text PRIMARY KEY, start_time bi
 """)
 
 user_table_create = ("""
-CREATE TABLE IF NOT EXISTS users(user_id int PRIMARY KEY, first_name text, last_name text, gender text, level text)
+CREATE TABLE IF NOT EXISTS users(user_id bigint PRIMARY KEY, first_name text, last_name text, gender text, level text)
 """)
 
 song_table_create = ("""
