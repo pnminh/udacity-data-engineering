@@ -9,11 +9,11 @@ time_table_drop = "DROP TABLE IF EXISTS time"
 # CREATE TABLES
 
 songplay_table_create = ("""
-CREATE TABLE IF NOT EXISTS songplays(songplay_id int, start_time timestamptz, user_id int, level int, song_id int, artist_id int, session_id text, location text, user_agent text )
+CREATE TABLE IF NOT EXISTS songplays(songplay_id text, start_time bigint, user_id int, level text, song_id text, artist_id text, session_id int, location text, user_agent text )
 """)
 
 user_table_create = ("""
-CREATE TABLE IF NOT EXISTS users(user_id int, first_name text, last_name text, gender text, level int)
+CREATE TABLE IF NOT EXISTS users(user_id int, first_name text, last_name text, gender text, level text)
 """)
 
 song_table_create = ("""
@@ -21,35 +21,44 @@ CREATE TABLE IF NOT EXISTS songs(song_id text, title text, artist_id text, year 
 """)
 
 artist_table_create = ("""
-CREATE TABLE IF NOT EXISTS artists(artist_id int, name text, location text, latitude int, longtitude int)
+CREATE TABLE IF NOT EXISTS artists(artist_id text, name text, location text, latitude numeric, longtitude numeric)
 """)
 
 time_table_create = ("""
-CREATE TABLE IF NOT EXISTS time(start_time timestamptz, hour int, day int, week int, month int, year int, weekday int)
+CREATE TABLE IF NOT EXISTS time(start_time bigint, hour int, day int, week int, month int, year int, weekday int)
 """)
 
 # INSERT RECORDS
 
 songplay_table_insert = ("""
+INSERT INTO songplays(songplay_id, start_time, user_id, level, song_id, artist_id, session_id, location, user_agent ) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s)
 """)
 
 user_table_insert = ("""
+INSERT INTO users(user_id, first_name, last_name, gender, level) VALUES(%s,%s,%s,%s,%s)
 """)
 
 song_table_insert = ("""
-INSERT INTO songs VALUES(%s,%s,%s,%s,%s)
+INSERT INTO songs(song_id,title,artist_id,year,duration) VALUES(%s,%s,%s,%s,%s)
 """)
 
 artist_table_insert = ("""
+INSERT INTO artists(artist_id, name, location, latitude, longtitude) VALUES(%s,%s,%s,%s,%s)
 """)
 
 
 time_table_insert = ("""
+INSERT INTO time(start_time, hour, day, week, month, year, weekday) VALUES(%s,%s,%s,%s,%s,%s,%s)
 """)
 
 # FIND SONGS
 
 song_select = ("""
+SELECT s.song_id, a.artist_id FROM songs s \
+JOIN artists a ON s.artist_id=a.artist_id \
+WHERE s.title=%s
+AND a.name=%s
+AND s.duration=%s
 """)
 
 # QUERY LISTS
