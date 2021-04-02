@@ -1,20 +1,54 @@
-# Sparkify's song ETL pipeline
+# Sparkify's song-play ETL pipeline
 
-## Nature of the ETL pipeline
-Sparkify data team finds it extremely important to understand the needs to keep our customers engage with the platform and provide new features based on their need. to the music they love to listen to based on their song preferences. 
-Based on the current song list that an user is listening to, we hope to find patterns that allows us to understand our user preferences and recommend new songs to them.   
-The data reside on multiple raw data-sources, many of which come from JSON files. 
-The ETL pipeline provides an easy way to parse the data from these files and save them into Postgres for further analysis
+## The nature of a need for the song-play ETL pipeline
+Sparkify finds it extremely important to keep the customers 
+engaged with and stay active on our platform by continuously 
+updating the application with new features tailored to the users' needs 
+by analyzing their listening activities on Sparkify.   
 
-## Purpose of the pipeline
+We believe that based on the current song list that each user is listening to, 
+we will be able to find patterns that allow us to understand 
+their preferences and recommend them with new and related songs, as well 
+as provide meaningful data to our other analysis tools.   
 
-Our data team at Sparkify has been working extensively on analyzing the habit our customers on music selection in order to provide them with efficient recommendations on the next songs they like to listen to.
-The data pipeline provides a facilitating tool to extract data from JSON files, transform the data into fact and dimension tables based on STAR schema, and then load those data into Postgres Database.
+Our existing process involves the creation of a dataset provided as JSON files and 
+including our whole song libraries and log data from all of our users' current playing songs
+on our Sparkify streaming application.   
 
+The project provides an ETL pipeline to easily parse the data from these files 
+and save them into Postgres for further analysis.
+
+## ETL pipeline designs
+
+As we focus on the current playing song from each user, 
+we find that STAR schema with fact and dimension tables are 
+the most effective way for our ETL needs.   
+
+The current playing songs are considered our fact data, 
+while supporting data including info about our users, the artists who perform those songs, 
+the songs' details, and the time when each song is played are also important and 
+used as dimension tables.   
+
+Here is the detailed diagram of our fact and dimension tables and their relationship:
 ![schema.png](schema.png)
-## Step-by-step ELT pipeline
-
+## ELT pipeline Step-by-step instructions
+From the workspace directory, run `create_tables.py` script to create the database and tables.
+```shell
+$ python create_tables.py
+```
+The `etl.py` script provides the main ETL process for our data pipeline. 
+It first loads the data from the `data` directory, 
+then extracts the required data and inserts them into the tables 
+using the queries from `sql_queries.py`.
+```shell
+$ python etl.py
+```
+To get more details about what the ETL process does behind the scene, 
+refer to `etl.ipynb` notebook. 
 ## Example queries
+We find that building queries to run against these fact and dimension tables 
+are vital to our analysis. Here are some sample queries you can use to get the initial grasp 
+of what the data can help you with.
 1. Specify the list of playing songs for an user. 
     ```sql
     select u.first_name ,u.last_name, s.title from songplays sp
@@ -31,5 +65,7 @@ The data pipeline provides a facilitating tool to extract data from JSON files, 
     group by s.title 
     order by occurrences;
     ```
-## About the company
-Sparkify is a company focusing on providing users with the highest quality music collections.
+## About the Sparkify the company
+Sparkify is a company focusing on providing our music lovers with our large collection of songs 
+from all genres and countries around the world. Our streaming application, Sparkify, 
+is highly reviewed by our loyal customers with its easy-to-use and intelligent features. 
