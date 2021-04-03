@@ -85,7 +85,7 @@ def process_data(cur, conn, filepath, func):
     against each file and the sparkify database,
     then commit the transaction
     @param cur: the cursor object used against the sparkify database
-    @param conn: the connection object used gainst the sparkify database
+    @param conn: the connection object used against the sparkify database
     @param filepath: the directory path to all the JSON files
     @param func: the process function to run the ETL transaction
     @return: None
