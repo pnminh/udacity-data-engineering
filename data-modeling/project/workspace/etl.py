@@ -7,6 +7,13 @@ import uuid
 
 
 def process_song_file(cur, filepath):
+    """
+    Process the ELT transaction against the JSON song file
+    and the sparkify database
+    @param cur: the cursor object used against the sparkify database
+    @param filepath: the path to the JSON song file
+    @return: None
+    """
     # open song file
     df = pd.read_json(filepath, lines=True)
 
@@ -21,6 +28,13 @@ def process_song_file(cur, filepath):
 
 
 def process_log_file(cur, filepath):
+    """
+    Process the ELT transaction against the JSON log file
+    and the sparkify database
+    @param cur: the cursor object used against the sparkify database
+    @param filepath: the path to the JSON log file
+    @return: None
+    """
     # open log file
     df = pd.read_json(filepath, lines=True)
 
@@ -66,6 +80,16 @@ def process_log_file(cur, filepath):
 
 
 def process_data(cur, conn, filepath, func):
+    """
+    Load all the files from a directory, run the ELT transaction
+    against each file and the sparkify database,
+    then commit the transaction
+    @param cur: the cursor object used against the sparkify database
+    @param conn: the connection object used gainst the sparkify database
+    @param filepath: the directory path to all the JSON files
+    @param func: the process function to run the ETL transaction
+    @return: None
+    """
     # get all files matching extension from directory
     all_files = []
     for root, dirs, files in os.walk(filepath):
@@ -85,6 +109,10 @@ def process_data(cur, conn, filepath, func):
 
 
 def main():
+    """
+    Run the ETL pipeline that extract data from song and log JSON file,
+    extract needed data and load them into the sparkify database
+    """
     conn = psycopg2.connect("host=127.0.0.1 dbname=sparkifydb user=student password=student")
     cur = conn.cursor()
 
