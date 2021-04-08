@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/data-modeling/data-modeling.iml" filepath="$PROJECT_DIR$/data-modeling/data-modeling.iml" />
+      <module fileurl="file://$PROJECT_DIR$/data-warehouses/data-warehouses.iml" filepath="$PROJECT_DIR$/data-warehouses/data-warehouses.iml" />
     </modules>
   </component>
 </project>
