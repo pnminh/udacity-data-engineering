@@ -15,3 +15,5 @@ LOG_DATA='s3://udacity-dend/log_data'
 LOG_JSONPATH='s3://udacity-dend/log_json_path.json'
 SONG_DATA='s3://udacity-dend/song_data'
 ```
+
+S3 bucket location:https://s3.console.aws.amazon.com/s3/buckets/udacity-dend
