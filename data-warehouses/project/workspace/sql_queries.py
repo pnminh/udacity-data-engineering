@@ -121,14 +121,25 @@ CREATE TABLE IF NOT EXISTS songplays
 
 staging_events_copy = ("""
 COPY staging_events 
-FROM 's3://udacity-dend/log_data'
-IAM_ROLE {}
-""").format(config['IAM_ROLE']['ARN'])
+FROM {}
+CREDENTIALS 'aws_iam_role={}' 
+REGION {}
+JSON {};
+"""). \
+    format(config['S3']['LOG_DATA'],
+           config['IAM_ROLE']['ARN'],
+           config['S3']['REGION'],
+           config['S3']['LOG_JSONPATH'])
 
 staging_songs_copy = ("""
-COPY staging_events FROM 's3://udacity-dend/song_data'
-IAM_ROLE {}
-""").format(config['IAM_ROLE']['ARN'])
+COPY staging_songs FROM {}
+CREDENTIALS 'aws_iam_role={}'
+JSON 'auto'
+REGION {};
+""").\
+    format(config['S3']['SONG_DATA'],
+           config['IAM_ROLE']['ARN'],
+           config['S3']['REGION'])
 
 # FINAL TABLES
 
