@@ -13,6 +13,7 @@ def load_staging_tables(cur, conn):
 
 def insert_tables(cur, conn):
     for query in insert_table_queries:
+        print('insert query to be run', insert_table_queries)
         cur.execute(query)
         conn.commit()
 

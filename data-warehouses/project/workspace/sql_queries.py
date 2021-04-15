@@ -107,7 +107,7 @@ CREATE TABLE IF NOT EXISTS songplays
 (
     songplay_id bigint IDENTITY(1,1) PRIMARY KEY , 
     start_time bigint NOT NULL REFERENCES time(start_time), 
-    user_id int NOT NULL REFERENCES users(user_id), 
+    user_id int REFERENCES users(user_id) sortkey distkey, 
     level text, 
     song_id text REFERENCES songs(song_id), 
     artist_id text REFERENCES artists(artist_id), 
@@ -168,7 +168,9 @@ user_table_insert = ("""
 INSERT INTO users(user_id, first_name, last_name, gender, level) 
 SELECT DISTINCT userid, firstname, lastname, gender, level
 FROM staging_events se
-WHERE NOT EXISTS (SELECT 1 
+WHERE 
+se.userid IS NOT NULL
+AND NOT EXISTS (SELECT 1 
                   FROM users u
                   WHERE u.user_id = se.userid 
                     AND u.first_name = se.firstname
@@ -181,7 +183,9 @@ song_table_insert = ("""
 INSERT INTO songs(song_id,title,artist_id,year,duration) 
 SELECT DISTINCT song_id,title, artist_id, year, duration
 FROM staging_songs ss
-WHERE NOT EXISTS (SELECT 1 
+WHERE 
+ss.song_id IS NOT NULL
+AND NOT EXISTS (SELECT 1 
                   FROM songs s
                   WHERE s.song_id = ss.song_id 
                     AND s.title = ss.title
@@ -194,7 +198,8 @@ artist_table_insert = ("""
 INSERT INTO artists(artist_id, name, location, latitude, longtitude) 
 SELECT DISTINCT artist_id, artist_name, artist_location, artist_latitude, artist_longitude
 FROM staging_songs ss
-WHERE NOT EXISTS (SELECT 1 
+WHERE ss.artist_id IS NOT NULL 
+AND NOT EXISTS (SELECT 1 
                   FROM artists a
                   WHERE a.artist_id = ss.artist_id 
                     AND a.name = ss.artist_name
