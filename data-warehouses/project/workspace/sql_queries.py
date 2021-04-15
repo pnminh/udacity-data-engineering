@@ -105,7 +105,7 @@ CREATE TABLE IF NOT EXISTS time
 songplay_table_create = ("""
 CREATE TABLE IF NOT EXISTS songplays
 (
-    songplay_id text PRIMARY KEY, 
+    songplay_id bigint IDENTITY(1,1) PRIMARY KEY , 
     start_time bigint NOT NULL REFERENCES time(start_time), 
     user_id int NOT NULL REFERENCES users(user_id), 
     level text, 
@@ -136,7 +136,7 @@ COPY staging_songs FROM {}
 CREDENTIALS 'aws_iam_role={}'
 JSON 'auto'
 REGION {};
-""").\
+"""). \
     format(config['S3']['SONG_DATA'],
            config['IAM_ROLE']['ARN'],
            config['S3']['REGION'])
@@ -146,10 +146,22 @@ REGION {};
 songplay_table_insert = ("""
 INSERT INTO songplays
 (
-    songplay_id, start_time, user_id, level, song_id, 
+    start_time, user_id, level, song_id, 
     artist_id, session_id, location, user_agent
 ) 
-VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s)
+SELECT 
+se.ts,se.userid,level,sa.song_id,sa.artist_id,se.sessionid,se.location,se.useragent
+from staging_events se
+left join 
+(
+	select se2.song,s.song_id,a.artist_id
+	from songs s
+	JOIN artists a ON s.artist_id=a.artist_id
+	join staging_events se2 on se2.artist  = a.name
+	where s.title = se2.song 
+	and s.duration = se2.length 
+) sa
+on se.song=sa.song;
 """)
 
 user_table_insert = ("""
