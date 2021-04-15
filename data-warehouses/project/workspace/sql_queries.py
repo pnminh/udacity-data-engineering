@@ -154,27 +154,62 @@ VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s)
 
 user_table_insert = ("""
 INSERT INTO users(user_id, first_name, last_name, gender, level) 
-VALUES(%s,%s,%s,%s,%s)
-ON CONFLICT(user_id) DO UPDATE
-SET level=EXCLUDED.level
+SELECT DISTINCT userid, firstname, lastname, gender, level
+FROM staging_events se
+WHERE NOT EXISTS (SELECT 1 
+                  FROM users u
+                  WHERE u.user_id = se.userid 
+                    AND u.first_name = se.firstname
+                    AND u.last_name = se.lastname
+                    AND u.gender = se.gender 
+                    AND u.level = se.level );
 """)
 
 song_table_insert = ("""
 INSERT INTO songs(song_id,title,artist_id,year,duration) 
-VALUES(%s,%s,%s,%s,%s)
-ON CONFLICT(song_id) DO NOTHING
+SELECT DISTINCT song_id,title, artist_id, year, duration
+FROM staging_songs ss
+WHERE NOT EXISTS (SELECT 1 
+                  FROM songs s
+                  WHERE s.song_id = ss.song_id 
+                    AND s.title = ss.title
+                    AND s.artist_id = ss.artist_id
+                    AND s.year = ss.year 
+                    AND s.duration = ss.duration );
 """)
 
 artist_table_insert = ("""
 INSERT INTO artists(artist_id, name, location, latitude, longtitude) 
-VALUES(%s,%s,%s,%s,%s) 
-ON CONFLICT(artist_id) DO NOTHING
+SELECT DISTINCT artist_id, artist_name, artist_location, artist_latitude, artist_longitude
+FROM staging_songs ss
+WHERE NOT EXISTS (SELECT 1 
+                  FROM artists a
+                  WHERE a.artist_id = ss.artist_id 
+                    AND a.name = ss.artist_name
+                    AND a.location = ss.artist_location
+                    AND a.latitude = ss.artist_latitude 
+                    AND a.longtitude = ss.artist_longitude );
 """)
 
 time_table_insert = ("""
+--refer to https://www.fernandomc.com/posts/redshift-epochs-and-timestamps/
 INSERT INTO time(start_time, hour, day, week, month, year, weekday) 
-VALUES(%s,%s,%s,%s,%s,%s,%s)
-ON CONFLICT(start_time) DO NOTHING
+SELECT DISTINCT ts, 
+extract (hour from ts2),
+extract (day from ts2),
+extract (week from ts2),
+extract (month from ts2),
+extract (year from ts2),
+extract (dayofweek from ts2)
+from 
+(
+ select ts, 
+ timestamp 'epoch' + ts/1000 * interval '1 second' AS ts2
+from staging_events se
+) staging_event_time
+WHERE NOT EXISTS (SELECT 1 
+                  FROM time t
+                  WHERE t.start_time = staging_event_time.ts);
 """)
 
 # QUERY LISTS
