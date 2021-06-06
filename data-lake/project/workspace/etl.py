@@ -12,6 +12,10 @@ os.environ['AWS_SECRET_ACCESS_KEY'] = config['AWS']['AWS_SECRET_ACCESS_KEY']
 
 
 def create_spark_session():
+    """
+    Create a spark session on AWS EMR
+    :return: the created spark session
+    """
     spark = SparkSession \
         .builder \
         .config("spark.jars.packages", "org.apache.hadoop:hadoop-aws:2.7.0") \
@@ -20,6 +24,13 @@ def create_spark_session():
 
 
 def process_song_data(spark, input_data, output_data):
+    """
+    Load song data coming from a source s3 bucket,
+    then create tables and save them to output s3 bucket
+    :param spark: a spark session
+    :param input_data: the data to be loaded from source s3 bucket
+    :param output_data: the data to be saved to output s3 bucket
+    """
     # get filepath to song data file
     song_data = os.path.join(input_data, 'song_data/*/*/*/*.json')
 
@@ -30,7 +41,7 @@ def process_song_data(spark, input_data, output_data):
     songs_table = df.select("song_id", "title", "artist_id", "year", "duration").distinct()
 
     # write songs table to parquet files partitioned by year and artist
-    songs_table.write.partitionBy("year", "artist_id").parquet(os.path.join(output_data, 'songs'))
+    songs_table.write.partitionBy("year", "artist_id").parquet(os.path.join(output_data, 'songs'), mode='overwrite')
 
     # extract columns to create artists table
     artists_table = df.select("artist_id", col("artist_name").alias("name"), col("artist_location").alias("location"),
@@ -38,10 +49,17 @@ def process_song_data(spark, input_data, output_data):
                               col("artist_longitude").alias("longitude")).distinct()
 
     # write artists table to parquet files
-    artists_table.write.parquet(os.path.join(output_data, 'artists'))
+    artists_table.write.parquet(os.path.join(output_data, 'artists'), mode='overwrite')
 
 
 def process_log_data(spark, input_data, output_data):
+    """
+    Load log and song data coming from a source s3 bucket,
+    then create tables and save them to output s3 bucket
+    :param spark: a spark session
+    :param input_data: the data to be loaded from source s3 bucket
+    :param output_data: the data to be saved to output s3 bucket
+    """
     # get filepath to log data file
     log_data = os.path.join(input_data, 'log_data')
 
@@ -53,7 +71,7 @@ def process_log_data(spark, input_data, output_data):
                             col("lastName").alias("last_name"), "gender", "level").distinct()
 
     # write users table to parquet files
-    users_table.write.parquet(os.path.join(output_data, 'users'))
+    users_table.write.parquet(os.path.join(output_data, 'users'), mode='overwrite')
 
     # create timestamp column from original timestamp column
     df = df.withColumn("timestamp", to_timestamp(col("ts") / 1000))
@@ -65,7 +83,7 @@ def process_log_data(spark, input_data, output_data):
                            dayofweek(col('timestamp')).alias('weekday')).distinct()
 
     # write time table to parquet files partitioned by year and month
-    time_table.write.partitionBy("year", "month").parquet(os.path.join(output_data, 'time'))
+    time_table.write.partitionBy("year", "month").parquet(os.path.join(output_data, 'time'), mode='overwrite')
 
     # read in song data to use for songplays table
     song_df = spark.read.json(os.path.join(input_data, 'song_data/*/*/*/*.json'))
@@ -77,10 +95,16 @@ def process_log_data(spark, input_data, output_data):
         df.location, df.userAgent.alias('user_agent')).withColumn('songplays_id', expr("uuid()")).distinct()
 
     # write songplays table to parquet files partitioned by year and month
-    songplays_table.write.parquet(os.path.join(output_data, 'songplays'))
+    songplays_table.write.parquet(os.path.join(output_data, 'songplays'), mode='overwrite')
 
 
 def main():
+    """
+    Create a spark session that process the job
+    to load the song and data from input s3 bucket,
+    then create tables and save them as paquet files
+    to an output s3 bucket
+    """
     spark = create_spark_session()
     input_data = "s3a://udacity-dend/"
     output_data = "s3a://minh-udacity-dend/"
