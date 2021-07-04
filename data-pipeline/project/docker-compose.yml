@@ -14,6 +14,9 @@ services:
     image: docker.io/bitnami/redis:6.0
     volumes:
       - 'redis_data:/bitnami'
+      - ./workspace/airflow/dags:/opt/bitnami/airflow/dags
+      - ./workspace/airflow/plugins:/opt/bitnami/airflow/plugins
+      - ./workspace/airflow/create_tables.sql:/opt/bitnami/airflow/create_tables
     environment:
       - ALLOW_EMPTY_PASSWORD=yes
   airflow-scheduler:
@@ -28,6 +31,9 @@ services:
       - AIRFLOW_WEBSERVER_HOST=airflow
     volumes:
       - airflow_scheduler_data:/bitnami
+      - ./workspace/airflow/dags:/opt/bitnami/airflow/dags
+      - ./workspace/airflow/plugins:/opt/bitnami/airflow/plugins
+      - ./workspace/airflow/create_tables.sql:/opt/bitnami/airflow/create_tables
   airflow-worker:
     # TODO: to be reverted to use proper registry/distro on T39132
     # image: docker.io/bitnami/airflow-worker:1
@@ -40,6 +46,9 @@ services:
       - AIRFLOW_WEBSERVER_HOST=airflow
     volumes:
       - airflow_worker_data:/bitnami
+      - ./workspace/airflow/dags:/opt/bitnami/airflow/dags
+      - ./workspace/airflow/plugins:/opt/bitnami/airflow/plugins
+      - ./workspace/airflow/create_tables.sql:/opt/bitnami/airflow/create_tables
   airflow:
     image: docker.io/bitnami/airflow:1
     environment:
@@ -51,7 +60,9 @@ services:
       - '8080:8080'
     volumes:
       - airflow_data:/bitnami
-      - ./workspace/airflow:/bitnami/airflow
+      - ./workspace/airflow/dags:/opt/bitnami/airflow/dags
+      - ./workspace/airflow/plugins:/opt/bitnami/airflow/plugins
+      - ./workspace/airflow/create_tables.sql:/opt/bitnami/airflow/create_tables
 volumes:
   airflow_scheduler_data:
     driver: local
