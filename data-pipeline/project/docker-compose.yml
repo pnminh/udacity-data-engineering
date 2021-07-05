@@ -6,6 +6,7 @@ services:
     volumes:
       - 'postgresql_data:/bitnami/postgresql'
     environment:
+      - AIRFLOW_FERNET_KEY=46BKJoQYlPPOexq0OhDZnIlNepKFf87WFwLbfzqDDho=
       - POSTGRESQL_DATABASE=bitnami_airflow
       - POSTGRESQL_USERNAME=bn_airflow
       - POSTGRESQL_PASSWORD=bitnami1
@@ -24,6 +25,7 @@ services:
     # image: docker.io/bitnami/airflow-scheduler:1
     image: docker.io/bitnami/airflow-scheduler:1
     environment:
+      - AIRFLOW_FERNET_KEY=46BKJoQYlPPOexq0OhDZnIlNepKFf87WFwLbfzqDDho=
       - AIRFLOW_DATABASE_NAME=bitnami_airflow
       - AIRFLOW_DATABASE_USERNAME=bn_airflow
       - AIRFLOW_DATABASE_PASSWORD=bitnami1
@@ -39,6 +41,7 @@ services:
     # image: docker.io/bitnami/airflow-worker:1
     image: docker.io/bitnami/airflow-worker:1
     environment:
+      - AIRFLOW_FERNET_KEY=46BKJoQYlPPOexq0OhDZnIlNepKFf87WFwLbfzqDDho=
       - AIRFLOW_DATABASE_NAME=bitnami_airflow
       - AIRFLOW_DATABASE_USERNAME=bn_airflow
       - AIRFLOW_DATABASE_PASSWORD=bitnami1
@@ -52,10 +55,13 @@ services:
   airflow:
     image: docker.io/bitnami/airflow:1
     environment:
+      - AIRFLOW_FERNET_KEY=46BKJoQYlPPOexq0OhDZnIlNepKFf87WFwLbfzqDDho=
       - AIRFLOW_DATABASE_NAME=bitnami_airflow
       - AIRFLOW_DATABASE_USERNAME=bn_airflow
       - AIRFLOW_DATABASE_PASSWORD=bitnami1
       - AIRFLOW_EXECUTOR=CeleryExecutor
+      - AIRFLOW_USERNAME=user
+      - AIRFLOW_PASSWORD=bitnami
     ports:
       - '8080:8080'
     volumes:
