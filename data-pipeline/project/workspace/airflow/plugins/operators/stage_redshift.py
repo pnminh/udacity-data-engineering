@@ -13,8 +13,6 @@ class StageToRedshiftOperator(BaseOperator):
         ACCESS_KEY_ID '{}'
         SECRET_ACCESS_KEY '{}'
         REGION '{}'
-    """
-    copy_sql_with_jsonpaths_file = copy_sql + """
         JSON '{}'
     """
 
@@ -29,7 +27,7 @@ class StageToRedshiftOperator(BaseOperator):
                  s3_bucket="",
                  s3_key="",
                  s3_region="us-east-1",
-                 jsonpaths_file="",
+                 jsonpaths_file="auto",
                  *args, **kwargs):
         super(StageToRedshiftOperator, self).__init__(*args, **kwargs)
         # Map params here
@@ -54,21 +52,12 @@ class StageToRedshiftOperator(BaseOperator):
         self.log.info("Copying data from S3 to Redshift")
         rendered_key = self.s3_key.format(**context)
         s3_path = "s3://{}/{}".format(self.s3_bucket, rendered_key)
-        if not self.jsonpaths_file:
-            formatted_sql = StageToRedshiftOperator.copy_sql.format(
-                self.table,
-                s3_path,
-                credentials.access_key,
-                credentials.secret_key,
-                self.s3_region
-            )
-        else:
-            formatted_sql = StageToRedshiftOperator.copy_sql_with_jsonpaths_file.format(
-                self.table,
-                s3_path,
-                credentials.access_key,
-                credentials.secret_key,
-                self.s3_region,
-                self.jsonpaths_file
-            )
+        formatted_sql = StageToRedshiftOperator.copy_sql.format(
+            self.table,
+            s3_path,
+            credentials.access_key,
+            credentials.secret_key,
+            self.s3_region,
+            self.jsonpaths_file
+        )
         redshift.run(formatted_sql)
