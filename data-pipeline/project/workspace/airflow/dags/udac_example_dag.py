@@ -11,7 +11,7 @@ from helpers import SqlQueries
 
 default_args = {
     'owner': 'udacity',
-    'start_date': datetime(2019, 1, 12),
+    'start_date': datetime(2021, 7, 1),
 }
 
 dag = DAG('udac_example_dag',
@@ -24,10 +24,17 @@ start_operator = DummyOperator(task_id='Begin_execution',  dag=dag)
 
 stage_events_to_redshift = StageToRedshiftOperator(
     task_id='Stage_events',
-    dag=dag
+    dag=dag,
+    table="staging_events",
+    redshift_conn_id="redshift",
+    aws_credentials_id="udacity_creds",
+    s3_bucket="udacity-dend",
+    s3_key="log_data",
+    s3_region="us-west-2",
+    jsonpaths_file='s3://udacity-dend/log_json_path.json'
 )
 
-stage_songs_to_redshift = StageToRedshiftOperator(
+stage_songs_to_redshift = DummyOperator(
     task_id='Stage_songs',
     dag=dag
 )
