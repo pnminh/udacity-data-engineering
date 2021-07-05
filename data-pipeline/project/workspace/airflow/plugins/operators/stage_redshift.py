@@ -9,13 +9,13 @@ class StageToRedshiftOperator(BaseOperator):
     template_fields = ("s3_key",)
     copy_sql = """
         COPY {} 
-        FROM {}
+        FROM '{}'
         ACCESS_KEY_ID '{}'
         SECRET_ACCESS_KEY '{}'
-        REGION {}
+        REGION '{}'
     """
     copy_sql_with_jsonpaths_file = copy_sql + """
-    JSON {}
+        JSON '{}'
     """
 
     @apply_defaults
