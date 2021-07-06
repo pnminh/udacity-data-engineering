@@ -1,10 +1,10 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from airflow import DAG
 from airflow.operators import (StageToRedshiftOperator, LoadFactOperator,
                                LoadDimensionOperator, DataQualityOperator)
 from airflow.operators.dummy_operator import DummyOperator
-from helpers import SqlQueries
+from helpers import SqlQueries, DataValidationTests
 
 # AWS_KEY = os.environ.get('AWS_KEY')
 # AWS_SECRET = os.environ.get('AWS_SECRET')
@@ -14,7 +14,7 @@ default_args = {
     'depends_on_past': False,
     'start_date': datetime.now(),
     'retries': 3,
-    'retry_delay': datetime.timedelta(minutes=5),
+    'retry_delay': timedelta(minutes=5),
     'email_on_retry': False,
 }
 
@@ -27,7 +27,7 @@ dag = DAG('udac_example_dag',
 
 start_operator = DummyOperator(task_id='Begin_execution', dag=dag)
 
-stage_events_to_redshift = StageToRedshiftOperator(
+stage_events_to_redshift = DummyOperator(
     task_id='Stage_events',
     dag=dag,
     table="staging_events",
@@ -39,15 +39,15 @@ stage_events_to_redshift = StageToRedshiftOperator(
     jsonpaths_file='s3://udacity-dend/log_json_path.json'
 )
 
-stage_songs_to_redshift = StageToRedshiftOperator(
+stage_songs_to_redshift = DummyOperator(
     task_id='Stage_songs',
     dag=dag,
     table="staging_songs",
     redshift_conn_id="redshift",
     aws_credentials_id="udacity_creds",
-    s3_bucket="udacity-dend",
+    s3_bucket="minh-udacity-dend",
     s3_key="song_data",
-    s3_region="us-west-2"
+    s3_region="us-east-1"
 )
 
 load_songplays_table = LoadFactOperator(
@@ -93,8 +93,9 @@ load_time_dimension_table = LoadDimensionOperator(
 run_quality_checks = DataQualityOperator(
     task_id='Run_data_quality_checks',
     dag=dag,
-    redshift_conn_id="redshift",
-    table_list_to_check=("staging_events", "staging_songs", "songplays", "artists", "users", "songs", "time")
+    test_function=DataValidationTests().test_data_exist,
+    test_function_args=(
+        "redshift", ("staging_events", "staging_songs", "songplays", "artists", "users", "songs", "time"))
 
 )
 
