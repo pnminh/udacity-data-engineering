@@ -1,8 +1,7 @@
 from datetime import datetime
 
 from airflow import DAG
-from airflow.operators import (LoadFactOperator,
-                               LoadDimensionOperator, DataQualityOperator)
+from airflow.operators import (DataQualityOperator)
 from airflow.operators.dummy_operator import DummyOperator
 from helpers import SqlQueries
 
@@ -45,7 +44,7 @@ stage_songs_to_redshift = DummyOperator(
     s3_region="us-west-2"
 )
 
-load_songplays_table = LoadFactOperator(
+load_songplays_table = DummyOperator(
     task_id='Load_songplays_fact_table',
     dag=dag,
     redshift_conn_id="redshift",
@@ -53,7 +52,7 @@ load_songplays_table = LoadFactOperator(
     fact_table_insert_query=SqlQueries.songplay_table_insert
 )
 
-load_user_dimension_table = LoadDimensionOperator(
+load_user_dimension_table = DummyOperator(
     task_id='Load_user_dim_table',
     dag=dag,
     redshift_conn_id="redshift",
@@ -61,7 +60,7 @@ load_user_dimension_table = LoadDimensionOperator(
     dimension_table_insert_query=SqlQueries.user_table_insert
 )
 
-load_song_dimension_table = LoadDimensionOperator(
+load_song_dimension_table = DummyOperator(
     task_id='Load_song_dim_table',
     dag=dag,
     redshift_conn_id="redshift",
@@ -69,7 +68,7 @@ load_song_dimension_table = LoadDimensionOperator(
     dimension_table_insert_query=SqlQueries.song_table_insert
 )
 
-load_artist_dimension_table = LoadDimensionOperator(
+load_artist_dimension_table = DummyOperator(
     task_id='Load_artist_dim_table',
     dag=dag,
     redshift_conn_id="redshift",
@@ -77,7 +76,7 @@ load_artist_dimension_table = LoadDimensionOperator(
     dimension_table_insert_query=SqlQueries.artist_table_insert
 )
 
-load_time_dimension_table = LoadDimensionOperator(
+load_time_dimension_table = DummyOperator(
     task_id='Load_time_dim_table',
     dag=dag,
     redshift_conn_id="redshift",
@@ -87,7 +86,10 @@ load_time_dimension_table = LoadDimensionOperator(
 
 run_quality_checks = DataQualityOperator(
     task_id='Run_data_quality_checks',
-    dag=dag
+    dag=dag,
+    redshift_conn_id="redshift",
+    table_list_to_check=("staging_events", "staging_songs", "songplays", "artists", "users", "songs", "time")
+
 )
 
 end_operator = DummyOperator(task_id='Stop_execution', dag=dag)
