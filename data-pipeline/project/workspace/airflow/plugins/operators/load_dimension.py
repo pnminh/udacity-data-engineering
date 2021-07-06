@@ -15,7 +15,7 @@ class LoadDimensionOperator(BaseOperator):
                  # Define your operators params (with defaults) here
                  # Example:
                  # conn_id = your-connection-name
-                 redshift_conn_id="",
+                     redshift_conn_id="",
                  dimension_table_name="",
                  dimension_table_insert_query="",
                  *args, **kwargs):
