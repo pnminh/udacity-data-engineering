@@ -1,7 +1,8 @@
 from datetime import datetime
 
 from airflow import DAG
-from airflow.operators import (DataQualityOperator)
+from airflow.operators import (StageToRedshiftOperator, LoadFactOperator,
+                               LoadDimensionOperator, DataQualityOperator)
 from airflow.operators.dummy_operator import DummyOperator
 from helpers import SqlQueries
 
@@ -21,7 +22,7 @@ dag = DAG('udac_example_dag',
 
 start_operator = DummyOperator(task_id='Begin_execution', dag=dag)
 
-stage_events_to_redshift = DummyOperator(
+stage_events_to_redshift = StageToRedshiftOperator(
     task_id='Stage_events',
     dag=dag,
     table="staging_events",
@@ -33,7 +34,7 @@ stage_events_to_redshift = DummyOperator(
     jsonpaths_file='s3://udacity-dend/log_json_path.json'
 )
 
-stage_songs_to_redshift = DummyOperator(
+stage_songs_to_redshift = StageToRedshiftOperator(
     task_id='Stage_songs',
     dag=dag,
     table="staging_songs",
@@ -44,7 +45,7 @@ stage_songs_to_redshift = DummyOperator(
     s3_region="us-west-2"
 )
 
-load_songplays_table = DummyOperator(
+load_songplays_table = LoadFactOperator(
     task_id='Load_songplays_fact_table',
     dag=dag,
     redshift_conn_id="redshift",
@@ -52,7 +53,7 @@ load_songplays_table = DummyOperator(
     fact_table_insert_query=SqlQueries.songplay_table_insert
 )
 
-load_user_dimension_table = DummyOperator(
+load_user_dimension_table = LoadDimensionOperator(
     task_id='Load_user_dim_table',
     dag=dag,
     redshift_conn_id="redshift",
@@ -60,7 +61,7 @@ load_user_dimension_table = DummyOperator(
     dimension_table_insert_query=SqlQueries.user_table_insert
 )
 
-load_song_dimension_table = DummyOperator(
+load_song_dimension_table = LoadDimensionOperator(
     task_id='Load_song_dim_table',
     dag=dag,
     redshift_conn_id="redshift",
@@ -68,7 +69,7 @@ load_song_dimension_table = DummyOperator(
     dimension_table_insert_query=SqlQueries.song_table_insert
 )
 
-load_artist_dimension_table = DummyOperator(
+load_artist_dimension_table = LoadDimensionOperator(
     task_id='Load_artist_dim_table',
     dag=dag,
     redshift_conn_id="redshift",
@@ -76,7 +77,7 @@ load_artist_dimension_table = DummyOperator(
     dimension_table_insert_query=SqlQueries.artist_table_insert
 )
 
-load_time_dimension_table = DummyOperator(
+load_time_dimension_table = LoadDimensionOperator(
     task_id='Load_time_dim_table',
     dag=dag,
     redshift_conn_id="redshift",
