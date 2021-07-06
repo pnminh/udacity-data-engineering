@@ -1,8 +1,7 @@
 from datetime import datetime, timedelta
 
 from airflow import DAG
-from airflow.operators import (StageToRedshiftOperator, LoadFactOperator,
-                               LoadDimensionOperator, DataQualityOperator)
+from airflow.operators import (DataQualityOperator)
 from airflow.operators.dummy_operator import DummyOperator
 from helpers import SqlQueries, DataValidationTests
 
@@ -16,6 +15,7 @@ default_args = {
     'retries': 3,
     'retry_delay': timedelta(minutes=5),
     'email_on_retry': False,
+    'catchup': False
 }
 
 dag = DAG('udac_example_dag',
@@ -93,9 +93,12 @@ load_time_dimension_table = LoadDimensionOperator(
 run_quality_checks = DataQualityOperator(
     task_id='Run_data_quality_checks',
     dag=dag,
-    test_function=DataValidationTests().test_data_exist,
-    test_function_args=(
-        "redshift", ("staging_events", "staging_songs", "songplays", "artists", "users", "songs", "time"))
+    dq_checks=[
+        {'func': DataValidationTests().data_exist, 'func_args': ("redshift", "staging_events"),
+         'expected_result': True},
+        {'func': DataValidationTests().data_exist, 'func_args': ("redshift", "staging_songs"),
+         'expected_result': True}
+    ]
 
 )
 
