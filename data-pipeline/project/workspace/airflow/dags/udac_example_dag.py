@@ -27,7 +27,7 @@ dag = DAG('udac_example_dag',
 
 start_operator = DummyOperator(task_id='Begin_execution', dag=dag)
 
-stage_events_to_redshift = DummyOperator(
+stage_events_to_redshift = StageToRedshiftOperator(
     task_id='Stage_events',
     dag=dag,
     table="staging_events",
@@ -39,15 +39,15 @@ stage_events_to_redshift = DummyOperator(
     jsonpaths_file='s3://udacity-dend/log_json_path.json'
 )
 
-stage_songs_to_redshift = DummyOperator(
+stage_songs_to_redshift = StageToRedshiftOperator(
     task_id='Stage_songs',
     dag=dag,
     table="staging_songs",
     redshift_conn_id="redshift",
     aws_credentials_id="udacity_creds",
-    s3_bucket="minh-udacity-dend",
+    s3_bucket="udacity-dend",
     s3_key="song_data",
-    s3_region="us-east-1"
+    s3_region="us-west-2"
 )
 
 load_songplays_table = LoadFactOperator(
