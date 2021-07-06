@@ -14,7 +14,13 @@ class DataQualityOperator(BaseOperator):
                  redshift_conn_id="",
                  table_list_to_check=(),
                  *args, **kwargs):
-
+        """
+        Initiate operator object
+        :param redshift_conn_id: airflow connection id for redshift hook
+        :param table_list_to_check: the list of tables to check for validation
+        :param args
+        :param kwargs
+        """
         super(DataQualityOperator, self).__init__(*args, **kwargs)
         # Map params here
         # Example:
@@ -23,6 +29,10 @@ class DataQualityOperator(BaseOperator):
         self.table_list_to_check = table_list_to_check
 
     def execute(self, context):
+        """
+        execute data validation against Redshift cluster
+        :param context: operator context
+        """
         redshift_hook = PostgresHook(postgres_conn_id=self.redshift_conn_id)
         for table in self.table_list_to_check:
             records = redshift_hook.get_records(f"SELECT COUNT(*) FROM {table}")

@@ -18,9 +18,6 @@ class StageToRedshiftOperator(BaseOperator):
 
     @apply_defaults
     def __init__(self,
-                 # Define your operators params (with defaults) here
-                 # Example:
-                 # redshift_conn_id=your-connection-name
                  redshift_conn_id="",
                  aws_credentials_id="",
                  table="",
@@ -29,8 +26,19 @@ class StageToRedshiftOperator(BaseOperator):
                  s3_region="us-east-1",
                  jsonpaths_file="auto",
                  *args, **kwargs):
+        """
+        The operator to copy data from s3 bucket into staging tables in Redshift
+        :param redshift_conn_id: airflow connection id for redshift hook
+        :param aws_credentials_id:  airflow connection id for aws credentials hook
+        :param table: the staging table
+        :param s3_bucket: the source s3 bucket
+        :param s3_key: the source s3 key
+        :param s3_region: the region where the s3 bucket resides
+        :param jsonpaths_file: the jsonpaths file path to be used with the copy
+        :param args
+        :param kwargs
+        """
         super(StageToRedshiftOperator, self).__init__(*args, **kwargs)
-        # Map params here
         self.table = table
         self.redshift_conn_id = redshift_conn_id
         self.s3_bucket = s3_bucket
@@ -38,10 +46,12 @@ class StageToRedshiftOperator(BaseOperator):
         self.aws_credentials_id = aws_credentials_id
         self.s3_region = s3_region
         self.jsonpaths_file = jsonpaths_file
-        # Example:
-        # self.conn_id = conn_id
 
     def execute(self, context):
+        """
+        execute the copy from s3 bucket to Redshift staging table
+        :param context: operator context
+        """
         aws_hook = AwsHook(self.aws_credentials_id)
         credentials = aws_hook.get_credentials()
         redshift = PostgresHook(postgres_conn_id=self.redshift_conn_id)

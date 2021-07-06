@@ -12,22 +12,28 @@ class LoadFactOperator(BaseOperator):
 
     @apply_defaults
     def __init__(self,
-                 # Define your operators params (with defaults) here
-                 # Example:
-                 # conn_id = your-connection-name
                  redshift_conn_id="",
                  fact_table_name="",
                  fact_table_insert_query="",
                  *args, **kwargs):
+        """
+        Initiate operator object
+        :param redshift_conn_id: airflow connection id for redshift hook
+        :param fact_table_name
+        :param fact_table_insert_query: the insert query to be run against the fact table
+        :param args
+        :param kwargs
+        """
         super(LoadFactOperator, self).__init__(*args, **kwargs)
-        # Map params here
-        # Example:
-        # self.conn_id = conn_id
         self.redshift_conn_id = redshift_conn_id
         self.fact_table_name = fact_table_name
         self.fact_table_insert_query = fact_table_insert_query
 
     def execute(self, context):
+        """
+        execute fact table data insert against Redshift cluster
+        :param context: operator context
+        """
         redshift = PostgresHook(postgres_conn_id=self.redshift_conn_id)
         fact_sql = LoadFactOperator.fact_sql_template.format(
             fact_table_name=self.fact_table_name,
