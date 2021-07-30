@@ -2,8 +2,10 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/capstone/capstone.iml" filepath="$PROJECT_DIR$/capstone/capstone.iml" />
       <module fileurl="file://$PROJECT_DIR$/data-lake/data-lake.iml" filepath="$PROJECT_DIR$/data-lake/data-lake.iml" />
       <module fileurl="file://$PROJECT_DIR$/data-modeling/data-modeling.iml" filepath="$PROJECT_DIR$/data-modeling/data-modeling.iml" />
+      <module fileurl="file://$PROJECT_DIR$/data-pipeline/data-pipeline.iml" filepath="$PROJECT_DIR$/data-pipeline/data-pipeline.iml" />
       <module fileurl="file://$PROJECT_DIR$/data-warehouses/data-warehouses.iml" filepath="$PROJECT_DIR$/data-warehouses/data-warehouses.iml" />
       <module fileurl="file://$PROJECT_DIR$/datalake/datalake.iml" filepath="$PROJECT_DIR$/datalake/datalake.iml" />
     </modules>

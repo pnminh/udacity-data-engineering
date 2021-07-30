@@ -1,5 +1,4 @@
 FROM jupyter/all-spark-notebook:spark-2
-
 WORKDIR "${HOME}"
 USER root
 ENV PACKAGES="libpq-dev"
