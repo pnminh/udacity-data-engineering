@@ -65,13 +65,12 @@ def transform_entry_ports(df_entry_ports):
     :param df_entry_ports: the original df_entry_ports
     :return: the cleaned df_entry_ports
     """
+    get_city_name = udf(lambda port_name: port_name.split(',')[0].strip() if ',' in port_name else None)
+    get_state_code = udf(lambda port_name: port_name.split(',')[1].strip() if ',' in port_name else None)
     return df_entry_ports \
-        .withColumn('port_name', regexp_replace('port_name', '^No PORT Code.*|Collapsed.*', 'INVALID')) \
-        .withColumn("city_name",
-                    udf(lambda port_name: port_name.split(',')[0].strip() if port_name != 'INVALID' else None)) \
-        .withColumn('state_code',
-                    udf(lambda port_name: port_name.split(',')[
-                        1].strip() if port_name != 'INVALID' else None)).dropDuplicates()
+        .withColumn("city_name", get_city_name(df_entry_ports.port_name)) \
+        .withColumn('state_code', get_state_code(df_entry_ports.port_name)) \
+        .withColumn('port_name', regexp_replace('port_name', '^No PORT Code.*|Collapsed.*', 'INVALID')).dropDuplicates()
 
 
 def extract_travel_modes(spark):
