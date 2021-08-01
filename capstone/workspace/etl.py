@@ -236,8 +236,11 @@ def save_immigration_fact_table(spark, df_immigrations,
     df_visa_modes.createOrReplaceTempView('visa_modes_temp_view')
 
     df_immigrations_fact_table = spark.sql("""
+                
                 SELECT
-                    itv.*
+                    itv.year_of_entry,itv.month_of_entry,ctv.country_code AS country_of_origin_code,
+                    ctv2.country_code AS country_of_residence_code, ustv.state_code AS us_address_state_code,
+                    ptv.port_code AS port_of_entry_code,tmtv.travel_mode_code,itv.visa_mode_code
                 FROM immigration_temp_view itv
                     LEFT JOIN countries_temp_view ctv ON itv.country_of_origin_code=ctv.country_code
                     LEFT JOIN countries_temp_view ctv2 ON itv.country_of_residence_code=ctv2.country_code
