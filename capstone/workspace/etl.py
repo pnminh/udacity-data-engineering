@@ -256,8 +256,7 @@ def save_immigration_fact_table(spark, df_immigrations,
                     tmtv.travel_mode_code IS NOT NULL AND
                     vmtv.visa_mode_code IS NOT NULL 
             """)
-    df_immigrations_fact_table.write.partitionBy('country_of_residence_code',
-                                                 'port_of_entry_code') \
+    df_immigrations_fact_table.write.partitionBy('us_address_state_code') \
         .parquet(OUTPUT_DATA_DIR + "fact_immigrations", mode='overwrite')
 
 
