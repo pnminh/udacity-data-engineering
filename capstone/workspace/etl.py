@@ -8,11 +8,11 @@ from pyspark.sql.types import StructType, StructField, StringType, DoubleType, I
 # Read config
 config = configparser.ConfigParser()
 config.read('capstone.cfg')
-SAS_LABELS_DESCRIPTION_FILE_PATH = config['DATA']['SAS_LABELS_DESCRIPTION_FILE_PATH']
-I94_DATA_FILE_PATH = config['DATA']['I94_DATA_FILE_PATH']
-DEMOGRAPHICS_DATA_PATH = config['DATA']['SUPPLEMENTARY_DATASETS_DIR'] + 'us-cities-demographics.csv'
-AIRPORT_CODE_DATA_PATH = config['DATA']['SUPPLEMENTARY_DATASETS_DIR'] + 'airport-codes_csv.csv'
-OUTPUT_DATA_DIR = config['DATA']['OUTPUT_DATA_DIR']
+IMMIGRATIONS_DATASET_METADATA_PATH = config['DATA']['IMMIGRATIONS_DATASET_METADATA_PATH']
+IMMIGRATIONS_DATASET_PATH = config['DATA']['IMMIGRATIONS_DATASET_PATH']
+US_DEMS_DATASET_PATH = config['DATA']['US_DEMS_DATASET_PATH']
+AIRPORTS_DATASET_PATH = config['DATA']['AIRPORTS_DATASET_PATH']
+OUTPUT_PARQUET_DIR = config['DATA']['OUTPUT_PARQUET_DIR']
 
 
 def main():
@@ -63,7 +63,7 @@ def main():
 
 def create_spark_session():
     """
-    Create a spark session on AWS EMR
+    Create a spark session
     :return: the created spark session
     """
     spark = SparkSession.builder.config("spark.jars",
@@ -77,7 +77,7 @@ def extract_immigration_data(spark):
     """
     load immigration data
     """
-    return spark.read.format('com.github.saurfang.sas.spark').load(I94_DATA_FILE_PATH)
+    return spark.read.format('com.github.saurfang.sas.spark').load(IMMIGRATIONS_DATASET_PATH)
 
 
 def extract_us_cities_demographics_data(spark):
@@ -98,14 +98,14 @@ def extract_us_cities_demographics_data(spark):
         StructField("count", IntegerType())
     ])
 
-    return spark.read.csv(DEMOGRAPHICS_DATA_PATH, sep=';', header=True, schema=schema)
+    return spark.read.csv(US_DEMS_DATASET_PATH, sep=';', header=True, schema=schema)
 
 
 def extract_airport_data(spark):
     """
     Load airport codes data
     """
-    return spark.read.csv(AIRPORT_CODE_DATA_PATH, header=True)
+    return spark.read.csv(AIRPORTS_DATASET_PATH, header=True)
 
 
 def extract_countries(spark):
@@ -196,7 +196,7 @@ def extract_visa_modes(spark):
 
 def transform_immigration_data(df_immigrations):
     """
-    Clean and retrieve only necessary data
+    Clean and retrieve only necessary data for immigration data
     :param df_immigrations:
     :return:
     """
@@ -213,7 +213,7 @@ def transform_immigration_data(df_immigrations):
 
 def transform_us_cities_demographics_data(df_us_dems):
     """
-    Clean and retrieve only necessary data
+    Clean and retrieve only necessary data for us demographics
     :param df_us_dems:
     :return:
     """
@@ -266,7 +266,7 @@ def save_countries_dimension_table(df_countries):
     save country dimension table as parquet files
     :param df_countries: the spark dataframe for countries
     """
-    df_countries.write.parquet(OUTPUT_DATA_DIR + "dim_countries", mode='overwrite')
+    df_countries.write.parquet(OUTPUT_PARQUET_DIR + "dim_countries", mode='overwrite')
 
 
 def save_entry_ports_dimension_table(df_entry_ports):
@@ -274,7 +274,7 @@ def save_entry_ports_dimension_table(df_entry_ports):
     save entry port dimension table as parquet files
     :param df_entry_ports: the spark dataframe for entry ports
     """
-    df_entry_ports.write.partitionBy("state_code", "city_name").parquet(OUTPUT_DATA_DIR + "dim_entry_ports",
+    df_entry_ports.write.partitionBy("state_code", "city_name").parquet(OUTPUT_PARQUET_DIR + "dim_entry_ports",
                                                                         mode='overwrite')
 
 
@@ -283,7 +283,7 @@ def save_travel_modes_dimension_table(df_travel_modes):
     save travel mode dimension table as parquet files
     :param df_travel_modes: the spark dataframe for travel modes
     """
-    df_travel_modes.write.parquet(OUTPUT_DATA_DIR + "dim_travel_modes", mode='overwrite')
+    df_travel_modes.write.parquet(OUTPUT_PARQUET_DIR + "dim_travel_modes", mode='overwrite')
 
 
 def save_us_states_dimension_table(df_us_states):
@@ -291,7 +291,7 @@ def save_us_states_dimension_table(df_us_states):
     save us state dimension table as parquet files
     :param df_us_states: the spark dataframe for us states
     """
-    df_us_states.write.parquet(OUTPUT_DATA_DIR + "dim_us_states", mode='overwrite')
+    df_us_states.write.parquet(OUTPUT_PARQUET_DIR + "dim_us_states", mode='overwrite')
 
 
 def save_visa_modes_dimension_table(df_visa_modes):
@@ -299,7 +299,7 @@ def save_visa_modes_dimension_table(df_visa_modes):
     save visa mode dimension table as parquet files
     :param df_visa_modes: the spark dataframe for visa types
     """
-    df_visa_modes.write.parquet(OUTPUT_DATA_DIR + "dim_visa_modes", mode='overwrite')
+    df_visa_modes.write.parquet(OUTPUT_PARQUET_DIR + "dim_visa_modes", mode='overwrite')
 
 
 def save_airports_dimension_table(df_airports):
@@ -309,7 +309,7 @@ def save_airports_dimension_table(df_airports):
     :param df_airports: the spark dataframe for airports
     """
     df_airports.write.partitionBy("state_code", "airport_code") \
-        .parquet(OUTPUT_DATA_DIR + "dim_airports", mode='overwrite')
+        .parquet(OUTPUT_PARQUET_DIR + "dim_airports", mode='overwrite')
 
 
 def save_us_cities_demographics_dimension_table(df_us_dems):
@@ -317,7 +317,7 @@ def save_us_cities_demographics_dimension_table(df_us_dems):
     save us demographics dimension table as parquet files
     """
     df_us_dems.write.partitionBy("state_code", "city") \
-        .parquet(OUTPUT_DATA_DIR + "dim_us_dems", mode='overwrite')
+        .parquet(OUTPUT_PARQUET_DIR + "dim_us_dems", mode='overwrite')
 
 
 def save_immigration_fact_table(spark, df_immigrations,
@@ -355,7 +355,7 @@ def save_immigration_fact_table(spark, df_immigrations,
                     vmtv.visa_mode_code IS NOT NULL 
             """)
     df_immigrations_fact_table.write.partitionBy('us_address_state_code') \
-        .parquet(OUTPUT_DATA_DIR + "fact_immigrations", mode='overwrite')
+        .parquet(OUTPUT_PARQUET_DIR + "fact_immigrations", mode='overwrite')
 
 
 def validate_data_integrity(spark):
@@ -423,14 +423,14 @@ def get_data_from_parquet_files(spark):
     """
     Utility method to load all data from parquet files
     """
-    df_immigrations = spark.read.parquet(OUTPUT_DATA_DIR + "fact_immigrations")
-    df_countries = spark.read.parquet(OUTPUT_DATA_DIR + "dim_countries")
-    df_entry_ports = spark.read.parquet(OUTPUT_DATA_DIR + "dim_entry_ports")
-    df_travel_modes = spark.read.parquet(OUTPUT_DATA_DIR + "dim_travel_modes")
-    df_us_states = spark.read.parquet(OUTPUT_DATA_DIR + "dim_us_states")
-    df_visa_modes = spark.read.parquet(OUTPUT_DATA_DIR + "dim_visa_modes")
-    df_airports = spark.read.parquet(OUTPUT_DATA_DIR + "dim_airports")
-    df_us_dems = spark.read.parquet(OUTPUT_DATA_DIR + "dim_us_dems")
+    df_immigrations = spark.read.parquet(OUTPUT_PARQUET_DIR + "fact_immigrations")
+    df_countries = spark.read.parquet(OUTPUT_PARQUET_DIR + "dim_countries")
+    df_entry_ports = spark.read.parquet(OUTPUT_PARQUET_DIR + "dim_entry_ports")
+    df_travel_modes = spark.read.parquet(OUTPUT_PARQUET_DIR + "dim_travel_modes")
+    df_us_states = spark.read.parquet(OUTPUT_PARQUET_DIR + "dim_us_states")
+    df_visa_modes = spark.read.parquet(OUTPUT_PARQUET_DIR + "dim_visa_modes")
+    df_airports = spark.read.parquet(OUTPUT_PARQUET_DIR + "dim_airports")
+    df_us_dems = spark.read.parquet(OUTPUT_PARQUET_DIR + "dim_us_dems")
     return df_airports, df_countries, df_entry_ports, df_immigrations, \
            df_travel_modes, df_us_dems, df_us_states, df_visa_modes
 
@@ -443,7 +443,7 @@ def get_label_codes(label_type):
     :return: the list of tuples of code and value
     """
     codes = []
-    with open('I94_SAS_Labels_Descriptions.SAS') as labels_desc_file:
+    with open('data/immigrations_metadata/I94_SAS_Labels_Descriptions.SAS') as labels_desc_file:
         labels_desc = labels_desc_file.read()
         None
         if label_type == 'country':
