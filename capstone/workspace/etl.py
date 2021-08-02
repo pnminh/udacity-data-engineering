@@ -87,7 +87,7 @@ def save_entry_ports_dimension_table(df_entry_ports):
     save entry port dimension table as parquet files
     :param df_entry_ports: the spark dataframe for entry ports
     """
-    df_entry_ports.write.parquet(OUTPUT_DATA_DIR + "dim_entry_ports", mode='overwrite')
+    df_entry_ports.write.partitionBy("state_code", "city_name").parquet(OUTPUT_DATA_DIR + "dim_entry_ports", mode='overwrite')
 
 
 def extract_travel_modes(spark):
@@ -304,15 +304,11 @@ def validate_data_integrity(spark):
     Make sure tables are not empty and the fact table have valid data
     """
 
-    # load data from tables
-    df_immigrations = spark.read.parquet(OUTPUT_DATA_DIR + "fact_immigrations")
-    df_countries = spark.read.parquet(OUTPUT_DATA_DIR + "dim_countries")
-    df_entry_ports = spark.read.parquet(OUTPUT_DATA_DIR + "dim_entry_ports")
-    df_travel_modes = spark.read.parquet(OUTPUT_DATA_DIR + "dim_travel_modes")
-    df_us_states = spark.read.parquet(OUTPUT_DATA_DIR + "dim_us_states")
-    df_visa_modes = spark.read.parquet(OUTPUT_DATA_DIR + "dim_visa_modes")
-    df_airports = spark.read.parquet(OUTPUT_DATA_DIR + "dim_airports")
-    df_us_dems = spark.read.parquet(OUTPUT_DATA_DIR + "dim_us_dems")
+    # load data from parquet files
+    df_airports, df_countries, df_entry_ports, \
+    df_immigrations, df_travel_modes, df_us_dems, \
+    df_us_states, df_visa_modes \
+        = get_data_from_parquet_files(spark)
     # Check tables for empty data
     error_message = ""
     if df_immigrations.count() == 0:
@@ -362,6 +358,22 @@ def validate_data_integrity(spark):
         error_message += "\ninvalid visa_mode_code value(s) found"
     if error_message:
         raise Exception(error_message)
+
+
+def get_data_from_parquet_files(spark):
+    """
+    Utility method to load all data from parquet files
+    """
+    df_immigrations = spark.read.parquet(OUTPUT_DATA_DIR + "fact_immigrations")
+    df_countries = spark.read.parquet(OUTPUT_DATA_DIR + "dim_countries")
+    df_entry_ports = spark.read.parquet(OUTPUT_DATA_DIR + "dim_entry_ports")
+    df_travel_modes = spark.read.parquet(OUTPUT_DATA_DIR + "dim_travel_modes")
+    df_us_states = spark.read.parquet(OUTPUT_DATA_DIR + "dim_us_states")
+    df_visa_modes = spark.read.parquet(OUTPUT_DATA_DIR + "dim_visa_modes")
+    df_airports = spark.read.parquet(OUTPUT_DATA_DIR + "dim_airports")
+    df_us_dems = spark.read.parquet(OUTPUT_DATA_DIR + "dim_us_dems")
+    return df_airports, df_countries, df_entry_ports, df_immigrations, \
+           df_travel_modes, df_us_dems, df_us_states, df_visa_modes
 
 
 def get_label_codes(label_type):
