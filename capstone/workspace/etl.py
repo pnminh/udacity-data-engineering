@@ -57,7 +57,8 @@ def main():
     print("Done saving data")
 
     # data validation
-    validate_data_integrity(spark)
+    validate_data_not_empty(spark)
+    validate_data_cleaned(spark)
     print("Done validating data")
 
 
@@ -358,9 +359,9 @@ def save_immigration_fact_table(spark, df_immigrations,
         .parquet(OUTPUT_PARQUET_DIR + "fact_immigrations", mode='overwrite')
 
 
-def validate_data_integrity(spark):
+def validate_data_not_empty(spark):
     """
-    Make sure tables are not empty and the fact table have valid data
+    Make sure tables are not empty
     """
 
     # load data from parquet files
@@ -393,6 +394,21 @@ def validate_data_integrity(spark):
 
     if df_us_dems.count() == 0:
         error_message += "\ndim_us_dems table does not have any data"
+    if error_message:
+        raise Exception(error_message)
+
+
+def validate_data_cleaned(spark):
+    """
+    Make sure the fact table have valid data
+    """
+
+    # load data from parquet files
+    df_airports, df_countries, df_entry_ports, \
+    df_immigrations, df_travel_modes, df_us_dems, \
+    df_us_states, df_visa_modes \
+        = get_data_from_parquet_files(spark)
+    error_message = ""
 
     # Check fact_immigrations table to make sure it has valid data
     # check if df_immigrations has values that are not in dimension tables (leftanti: not contains)
