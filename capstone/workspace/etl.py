@@ -1,6 +1,7 @@
 import configparser
 import re
 
+from pyspark.sql import SparkSession
 from pyspark.sql.functions import regexp_replace, udf, col
 from pyspark.sql.types import StructType, StructField, StringType, DoubleType, IntegerType
 
@@ -12,6 +13,99 @@ I94_DATA_FILE_PATH = config['DATA']['I94_DATA_FILE_PATH']
 DEMOGRAPHICS_DATA_PATH = config['DATA']['SUPPLEMENTARY_DATASETS_DIR'] + 'us-cities-demographics.csv'
 AIRPORT_CODE_DATA_PATH = config['DATA']['SUPPLEMENTARY_DATASETS_DIR'] + 'airport-codes_csv.csv'
 OUTPUT_DATA_DIR = config['DATA']['OUTPUT_DATA_DIR']
+
+
+def main():
+    """
+    Run etl steps
+    """
+    print("Start ETL process")
+    # create spark session
+    spark = create_spark_session()
+
+    # set LOG level
+    spark.sparkContext.setLogLevel('WARN')
+
+    # extract data
+    df_immigrations = extract_immigration_data(spark)
+    df_us_dems = extract_us_cities_demographics_data(spark)
+    df_airports = extract_airport_data(spark)
+    df_countries = extract_countries(spark)
+    df_entry_ports = extract_entry_ports(spark)
+    df_travel_modes = extract_travel_modes(spark)
+    df_us_states = extract_us_states(spark)
+    df_visa_modes = extract_visa_modes(spark)
+    print("Done extracting data")
+    # transform
+    df_immigrations = transform_immigration_data(df_immigrations)
+    df_us_dems = transform_us_cities_demographics_data(df_us_dems)
+    df_airports = transform_airport_data(df_airports)
+    df_countries = transform_countries_data(df_countries)
+    df_entry_ports = transform_entry_ports(df_entry_ports)
+    print("Done transforming data")
+    # save to parquet files
+    save_countries_dimension_table(df_countries)
+    save_entry_ports_dimension_table(df_entry_ports)
+    save_travel_modes_dimension_table(df_travel_modes)
+    save_us_states_dimension_table(df_us_states)
+    save_visa_modes_dimension_table(df_visa_modes)
+    save_airports_dimension_table(df_airports)
+    save_us_cities_demographics_dimension_table(df_us_dems)
+    save_immigration_fact_table(spark, df_immigrations,
+                                df_countries, df_us_states, df_entry_ports,
+                                df_travel_modes, df_visa_modes)
+    print("Done saving data")
+
+    # data validation
+    validate_data_integrity(spark)
+    print("Done validating data")
+
+
+def create_spark_session():
+    """
+    Create a spark session on AWS EMR
+    :return: the created spark session
+    """
+    spark = SparkSession.builder.config("spark.jars",
+                                        "/usr/local/spark/jars/parso-2.0.11.jar," +
+                                        "/usr/local/spark/jars/spark-sas7bdat-3.0.0-s_2.11.jar") \
+        .getOrCreate()
+    return spark
+
+
+def extract_immigration_data(spark):
+    """
+    load immigration data
+    """
+    return spark.read.format('com.github.saurfang.sas.spark').load(I94_DATA_FILE_PATH)
+
+
+def extract_us_cities_demographics_data(spark):
+    """Load US city demographics data
+    """
+    schema = StructType([
+        StructField("city", StringType()),
+        StructField("state", StringType()),
+        StructField("median_age", DoubleType()),
+        StructField("male_population", IntegerType()),
+        StructField("female_population", IntegerType()),
+        StructField("total_population", IntegerType()),
+        StructField("number_of_veterans", IntegerType()),
+        StructField("foreign_born", IntegerType()),
+        StructField("average_household_size", DoubleType()),
+        StructField("state_code", StringType()),
+        StructField("race", StringType()),
+        StructField("count", IntegerType())
+    ])
+
+    return spark.read.csv(DEMOGRAPHICS_DATA_PATH, sep=';', header=True, schema=schema)
+
+
+def extract_airport_data(spark):
+    """
+    Load airport codes data
+    """
+    return spark.read.csv(AIRPORT_CODE_DATA_PATH, header=True)
 
 
 def extract_countries(spark):
@@ -32,25 +126,6 @@ def extract_countries(spark):
     )
 
 
-def transform_countries_data(df_countries):
-    """
-    Clean countries data with setting all invalid country names to INVALID
-    :param df_countries: the original df_countries
-    :return: the cleaned df_countries
-    """
-    return df_countries \
-        .withColumn('country_name',
-                    regexp_replace('country_name', '^No Country.*|INVALID.*|Collapsed.*', 'INVALID')).dropDuplicates()
-
-
-def save_countries_dimension_table(df_countries):
-    """
-    save country dimension table as parquet files
-    :param df_countries: the spark dataframe for countries
-    """
-    df_countries.write.parquet(OUTPUT_DATA_DIR + "dim_countries", mode='overwrite')
-
-
 def extract_entry_ports(spark):
     """
     create a spark dataframe with port of entry data
@@ -66,28 +141,6 @@ def extract_entry_ports(spark):
         data=entry_ports,
         schema=schema
     )
-
-
-def transform_entry_ports(df_entry_ports):
-    """
-    Clean entry port data with setting all invalid port names to INVALID
-    :param df_entry_ports: the original df_entry_ports
-    :return: the cleaned df_entry_ports
-    """
-    get_city_name = udf(lambda port_name: port_name.split(',')[0].strip() if ',' in port_name else None)
-    get_state_code = udf(lambda port_name: port_name.split(',')[1].strip() if ',' in port_name else None)
-    return df_entry_ports \
-        .withColumn("city_name", get_city_name(df_entry_ports.port_name)) \
-        .withColumn('state_code', get_state_code(df_entry_ports.port_name)) \
-        .withColumn('port_name', regexp_replace('port_name', '^No PORT Code.*|Collapsed.*', 'INVALID')).dropDuplicates()
-
-
-def save_entry_ports_dimension_table(df_entry_ports):
-    """
-    save entry port dimension table as parquet files
-    :param df_entry_ports: the spark dataframe for entry ports
-    """
-    df_entry_ports.write.partitionBy("state_code", "city_name").parquet(OUTPUT_DATA_DIR + "dim_entry_ports", mode='overwrite')
 
 
 def extract_travel_modes(spark):
@@ -107,14 +160,6 @@ def extract_travel_modes(spark):
     )
 
 
-def save_travel_modes_dimension_table(df_travel_modes):
-    """
-    save travel mode dimension table as parquet files
-    :param df_travel_modes: the spark dataframe for travel modes
-    """
-    df_travel_modes.write.parquet(OUTPUT_DATA_DIR + "dim_travel_modes", mode='overwrite')
-
-
 def extract_us_states(spark):
     """
     create a spark dataframe with us state data
@@ -130,14 +175,6 @@ def extract_us_states(spark):
         data=us_states,
         schema=schema
     )
-
-
-def save_us_states_dimension_table(df_us_states):
-    """
-    save us state dimension table as parquet files
-    :param df_us_states: the spark dataframe for us states
-    """
-    df_us_states.write.parquet(OUTPUT_DATA_DIR + "dim_us_states", mode='overwrite')
 
 
 def extract_visa_modes(spark):
@@ -157,19 +194,30 @@ def extract_visa_modes(spark):
     )
 
 
-def save_visa_modes_dimension_table(df_visa_modes):
+def transform_immigration_data(df_immigrations):
     """
-    save visa mode dimension table as parquet files
-    :param df_visa_modes: the spark dataframe for visa types
+    Clean and retrieve only necessary data
+    :param df_immigrations:
+    :return:
     """
-    df_visa_modes.write.parquet(OUTPUT_DATA_DIR + "dim_visa_modes", mode='overwrite')
+    return df_immigrations.select(col('i94yr').alias('year_of_entry'),
+                                  col('i94mon').alias('month_of_entry'),
+                                  col('i94cit').alias('country_of_origin_code'),
+                                  col('i94res').alias('country_of_residence_code'),
+                                  col('i94addr').alias('us_address_state_code'),
+                                  col('i94port').alias('port_of_entry_code'),
+                                  col('i94mode').alias('travel_mode_code'),
+                                  col('i94visa').alias('visa_mode_code'),
+                                  col('airline'), col('visatype').alias('visa_type')).dropDuplicates()
 
 
-def extract_airport_data(spark):
+def transform_us_cities_demographics_data(df_us_dems):
     """
-    Load airport codes data
+    Clean and retrieve only necessary data
+    :param df_us_dems:
+    :return:
     """
-    return spark.read.csv(AIRPORT_CODE_DATA_PATH, header=True)
+    return df_us_dems.select('city', 'state_code', 'total_population', 'foreign_born').dropDuplicates()
 
 
 def transform_airport_data(df_airports):
@@ -188,6 +236,72 @@ def transform_airport_data(df_airports):
         .where('iso_country="US" and airport_code is not null').dropDuplicates()
 
 
+def transform_countries_data(df_countries):
+    """
+    Clean countries data with setting all invalid country names to INVALID
+    :param df_countries: the original df_countries
+    :return: the cleaned df_countries
+    """
+    return df_countries \
+        .withColumn('country_name',
+                    regexp_replace('country_name', '^No Country.*|INVALID.*|Collapsed.*', 'INVALID')).dropDuplicates()
+
+
+def transform_entry_ports(df_entry_ports):
+    """
+    Clean entry port data with setting all invalid port names to INVALID
+    :param df_entry_ports: the original df_entry_ports
+    :return: the cleaned df_entry_ports
+    """
+    get_city_name = udf(lambda port_name: port_name.split(',')[0].strip() if ',' in port_name else None)
+    get_state_code = udf(lambda port_name: port_name.split(',')[1].strip() if ',' in port_name else None)
+    return df_entry_ports \
+        .withColumn("city_name", get_city_name(df_entry_ports.port_name)) \
+        .withColumn('state_code', get_state_code(df_entry_ports.port_name)) \
+        .withColumn('port_name', regexp_replace('port_name', '^No PORT Code.*|Collapsed.*', 'INVALID')).dropDuplicates()
+
+
+def save_countries_dimension_table(df_countries):
+    """
+    save country dimension table as parquet files
+    :param df_countries: the spark dataframe for countries
+    """
+    df_countries.write.parquet(OUTPUT_DATA_DIR + "dim_countries", mode='overwrite')
+
+
+def save_entry_ports_dimension_table(df_entry_ports):
+    """
+    save entry port dimension table as parquet files
+    :param df_entry_ports: the spark dataframe for entry ports
+    """
+    df_entry_ports.write.partitionBy("state_code", "city_name").parquet(OUTPUT_DATA_DIR + "dim_entry_ports",
+                                                                        mode='overwrite')
+
+
+def save_travel_modes_dimension_table(df_travel_modes):
+    """
+    save travel mode dimension table as parquet files
+    :param df_travel_modes: the spark dataframe for travel modes
+    """
+    df_travel_modes.write.parquet(OUTPUT_DATA_DIR + "dim_travel_modes", mode='overwrite')
+
+
+def save_us_states_dimension_table(df_us_states):
+    """
+    save us state dimension table as parquet files
+    :param df_us_states: the spark dataframe for us states
+    """
+    df_us_states.write.parquet(OUTPUT_DATA_DIR + "dim_us_states", mode='overwrite')
+
+
+def save_visa_modes_dimension_table(df_visa_modes):
+    """
+    save visa mode dimension table as parquet files
+    :param df_visa_modes: the spark dataframe for visa types
+    """
+    df_visa_modes.write.parquet(OUTPUT_DATA_DIR + "dim_visa_modes", mode='overwrite')
+
+
 def save_airports_dimension_table(df_airports):
     """
     save airports dimension table as parquet files, partitioned by states
@@ -198,28 +312,12 @@ def save_airports_dimension_table(df_airports):
         .parquet(OUTPUT_DATA_DIR + "dim_airports", mode='overwrite')
 
 
-def extract_immigration_data(spark):
+def save_us_cities_demographics_dimension_table(df_us_dems):
     """
-    load immigration data
+    save us demographics dimension table as parquet files
     """
-    return spark.read.format('com.github.saurfang.sas.spark').load(I94_DATA_FILE_PATH)
-
-
-def transform_immigration_data(df_immigrations):
-    """
-    Clean and retrieve only necessary data
-    :param df_immigrations:
-    :return:
-    """
-    return df_immigrations.select(col('i94yr').alias('year_of_entry'),
-                                  col('i94mon').alias('month_of_entry'),
-                                  col('i94cit').alias('country_of_origin_code'),
-                                  col('i94res').alias('country_of_residence_code'),
-                                  col('i94addr').alias('us_address_state_code'),
-                                  col('i94port').alias('port_of_entry_code'),
-                                  col('i94mode').alias('travel_mode_code'),
-                                  col('i94visa').alias('visa_mode_code'),
-                                  col('airline'), col('visatype').alias('visa_type')).dropDuplicates()
+    df_us_dems.write.partitionBy("state_code", "city") \
+        .parquet(OUTPUT_DATA_DIR + "dim_us_dems", mode='overwrite')
 
 
 def save_immigration_fact_table(spark, df_immigrations,
@@ -258,44 +356,6 @@ def save_immigration_fact_table(spark, df_immigrations,
             """)
     df_immigrations_fact_table.write.partitionBy('us_address_state_code') \
         .parquet(OUTPUT_DATA_DIR + "fact_immigrations", mode='overwrite')
-
-
-def extract_us_cities_demographics_data(spark):
-    """Load US city demographics data
-    """
-    schema = StructType([
-        StructField("city", StringType()),
-        StructField("state", StringType()),
-        StructField("median_age", DoubleType()),
-        StructField("male_population", IntegerType()),
-        StructField("female_population", IntegerType()),
-        StructField("total_population", IntegerType()),
-        StructField("number_of_veterans", IntegerType()),
-        StructField("foreign_born", IntegerType()),
-        StructField("average_household_size", DoubleType()),
-        StructField("state_code", StringType()),
-        StructField("race", StringType()),
-        StructField("count", IntegerType())
-    ])
-
-    return spark.read.csv(DEMOGRAPHICS_DATA_PATH, sep=';', header=True, schema=schema)
-
-
-def transform_us_cities_demographics_data(df_us_dems):
-    """
-    Clean and retrieve only necessary data
-    :param df_us_dems:
-    :return:
-    """
-    return df_us_dems.select('city', 'state_code', 'total_population', 'foreign_born').dropDuplicates()
-
-
-def save_us_cities_demographics_dimension_table(df_us_dems):
-    """
-    save us demographics dimension table as parquet files
-    """
-    df_us_dems.write.partitionBy("state_code", "city") \
-        .parquet(OUTPUT_DATA_DIR + "dim_us_dems", mode='overwrite')
 
 
 def validate_data_integrity(spark):
@@ -408,3 +468,7 @@ def get_label_codes(label_type):
                 value = parts[1].strip().strip("'").strip()
                 codes.append((code, value))
     return codes
+
+
+if __name__ == '__main__':
+    main()
